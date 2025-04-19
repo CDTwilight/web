@@ -1,0 +1,86 @@
+{% extends "gestorapp/base.html" %}
+{% load math_filters %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    {% for stats_mes in estadisticas_mensuales %}
+    <div class="card bg-dark text-white mb-4">
+        <div class="card-header">
+            <h3>{{ stats_mes.mes }}</h3>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-dark">
+                    <thead>
+                        <tr>
+                            <th>Material</th>
+                            <th>Unidades Vendidas</th>
+                            <th>Ingresos</th>
+                            <th>Pedidos Pendientes</th>
+                            <th>Demanda Total</th>
+                            <th>% Cumplimiento</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for material in stats_mes.materiales %}
+                        <tr>
+                            <td>{{ material.nombre }}</td>
+                            <td>{{ material.ventas_cantidad|default:0 }}</td>
+                            <td>${{ material.ingresos_total|default:0|floatformat:2 }}</td>
+                            <td>
+                                {% if material.pedidos.estado == 'efectuado' %}
+                                <!-- Actualizar cualquier referencia a pedidos efectuados -->
+                                {% endif %}
+                                {{ material.pedidos_pendientes|default:0 }}
+                            </td>
+                            <td>{{ material.demanda_total|default:0 }}</td>
+                            <td>
+                                {% if material.demanda_total %}
+                                    {% with cumplimiento=material.ventas_cantidad|default:0|multiply:100|divide:material.demanda_total %}
+                                        {{ cumplimiento|floatformat:1 }}%
+                                    {% endwith %}
+                                {% else %}
+                                    0%
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+    <div class="card bg-dark text-white mb-4">
+        <div class="card-header">
+            <h3>Análisis de Materiales - {{ mes_actual }}</h3>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-dark">
+                    <thead>
+                        <tr>
+                            <th>Material</th>
+                            <th>Stock Total del Mes</th>
+                            <th>Unidades Vendidas</th>
+                            <th>% Ventas/Stock</th>
+                            <th>Ingresos</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for material in materiales %}
+                        <tr>
+                            <td>{{ material.nombre }}</td>
+                            <td>{{ material.stock_total }}</td>
+                            <td>{{ material.ventas_totales }}</td>
+                            <td>{{ material.porcentaje_ventas|default:0|floatformat:1 }}%</td>
+                            <td>${{ material.ingresos_total|default:0|floatformat:2 }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
