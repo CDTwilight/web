@@ -1,0 +1,53 @@
+<div class="table-responsive mt-4">
+    <table class="table table-dark table-hover">
+        <thead class="d-md-table-header-group">
+            <tr>
+                <th>Artículo</th>
+                <th>Código</th>
+                <th>Cantidad</th>
+                <th>Precio Unitario</th>
+                <th>Total</th>
+                
+            </tr>
+        </thead>
+        <tbody>
+            {% for detalle in pedido.pedidodetalle_set.all %}
+            <tr>
+                <td>
+                    <span class="d-inline d-md-none fw-bold text-muted small">Artículo:</span>
+                    <span>{{ detalle.material.nombre }}</span>
+                    {% if detalle.en_oferta %}
+                        <span class="badge bg-danger">Oferta</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <span class="d-inline d-md-none fw-bold text-muted small">Código:</span>  <!-- Cambiado de "Gestor" a "Código" -->
+                    <span>{{ detalle.material.codigo|default:"Sin código" }}</span>  <!-- Cambiado de user.get_full_name a material.codigo -->
+                </td>
+                <td>
+                    <span class="d-inline d-md-none fw-bold text-muted small">Cantidad:</span>
+                    <span>{{ detalle.cantidad }}</span>
+                </td>
+                <td>
+                    <span class="d-inline d-md-none fw-bold text-muted small">Precio Unitario:</span>
+                    <span>${{ detalle.precio_unitario|default:detalle.material.precio|floatformat:2 }}</span>
+                    {% if detalle.en_oferta %}
+                        <br>
+                        <small class="text-muted text-decoration-line-through">${{ detalle.precio_regular|floatformat:2 }}</small>
+                        <small class="text-danger">-{{ detalle.descuento_aplicado|floatformat:0 }}%</small>
+                    {% endif %}
+                </td>
+                <td>
+                    <span class="d-inline d-md-none fw-bold text-muted small">Total:</span>
+                    <span>${{ detalle.total|floatformat:2 }}</span>
+                </td>
+                
+            </tr>
+            {% endfor %}
+            <tr class="table-active">
+                <td colspan="3" class="text-end"><strong>Total del Pedido:</strong></td>
+                <td colspan="2"><strong>${{ pedido.total|floatformat:2 }}</strong></td>
+            </tr>
+        </tbody>
+    </table>
+</div>
