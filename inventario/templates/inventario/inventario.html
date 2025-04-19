@@ -1,0 +1,41 @@
+{% extends "gestorapp/base.html" %}
+{% load static %}
+
+{% block content %}
+<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+
+<div class="container mt-4">
+    {% include "inventario/includes/categoria_filter.html" %}
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card-container">
+                {% for material in materiales %}
+                    {% include "inventario/includes/material_card.html" %}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if request.user.is_authenticated %}
+    {% include "inventario/includes/cart_button.html" %}
+    {% include "inventario/includes/cart_modal.html" %}
+{% endif %}
+
+{% include "inventario/includes/scripts.html" %}
+{% include "inventario/includes/styles.html" %}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Verificar si debe abrir el carrito
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('openCart') === 'true') {
+        const cartModal = new bootstrap.Modal(document.getElementById('cartModal'));
+        cartModal.show();
+    }
+});
+</script>
+
+{% endblock %}

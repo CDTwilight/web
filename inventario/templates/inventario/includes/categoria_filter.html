@@ -1,0 +1,163 @@
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="form-group mb-3 d-flex gap-2">
+            <select id="categoriaSelect" name="categoria" class="form-control">
+                <option value="">Todas las categorías</option>
+                {% for categoria in categorias %}
+                    <option value="{{ categoria.id }}"
+                        {% if categoria.id|stringformat:"s" == categoria_seleccionada %}selected{% endif %}>
+                        {{ categoria.nombre }}
+                    </option>
+                {% endfor %}
+            </select>
+            {% if user.is_superuser %}
+                <button type="button" 
+                        class="btn btn-success" 
+                        data-bs-toggle="modal" 
+                        data-bs-target="#nuevaCategoriaModal"
+                        title="Agregar nueva categoría">
+                    <i class="fas fa-plus"></i>
+                </button>
+            {% endif %}
+        </div>
+    </div>
+    <div class="col-md-8">
+        <div class="input-group">
+            <input type="text" 
+                   id="searchInput"
+                   name="search" 
+                   class="form-control" 
+                   placeholder="Buscar por nombre o código..."
+                   value="{{ search_query|default:'' }}"
+                   autocomplete="off">
+            <button class="btn btn-primary" type="button" id="searchButton">
+                <i class="fas fa-search"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Nueva Categoría -->
+<div class="modal fade" id="nuevaCategoriaModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark text-white">
+            <div class="modal-header">
+                <h5 class="modal-title">Nueva Categoría</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="formNuevaCategoria">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Nombre de la categoría</label>
+                        <input type="text" name="nombre" class="form-control" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success">Crear Categoría</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    const searchButton = document.getElementById('searchButton');
+    const categoriaSelect = document.getElementById('categoriaSelect');
+    let searchTimeout;
+
+    function performSearch() {
+        const searchTerm = searchInput.value;
+        const categoria = categoriaSelect.value;
+        const currentUrl = new URL(window.location.href);
+        
+        // Actualizar parámetros de URL
+        if (searchTerm) {
+            currentUrl.searchParams.set('search', searchTerm);
+        } else {
+            currentUrl.searchParams.delete('search');
+        }
+        
+        if (categoria) {
+            currentUrl.searchParams.set('categoria', categoria);
+        } else {
+            currentUrl.searchParams.delete('categoria');
+        }
+
+        // Realizar petición AJAX
+        fetch(currentUrl, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.text())
+        .then(html => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const newCards = doc.querySelector('.card-container');
+            
+            // Actualizar los materiales
+            document.querySelector('.card-container').innerHTML = newCards.innerHTML;
+            
+            // Actualizar la URL sin recargar la página
+            window.history.pushState({}, '', currentUrl);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('Error al realizar la búsqueda', 'error');
+        });
+    }
+
+    // Evento para búsqueda al escribir (con debounce)
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(performSearch, 500);
+    });
+
+    // Evento para búsqueda al hacer click en el botón
+    searchButton.addEventListener('click', performSearch);
+
+    // Evento para búsqueda al cambiar categoría
+    categoriaSelect.addEventListener('change', performSearch);
+
+    // Evento para búsqueda al presionar Enter
+    searchInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            performSearch();
+        }
+    });
+
+    const formNuevaCategoria = document.getElementById('formNuevaCategoria');
+    if (formNuevaCategoria) {
+        formNuevaCategoria.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            fetch('{% url "crear_categoria" %}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: new FormData(this)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Recargar la página para mostrar la nueva categoría
+                    location.reload();
+                } else {
+                    showToast(data.message || 'Error al crear la categoría', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('Error al crear la categoría', 'error');
+            });
+        });
+    }
+});
+</script>
